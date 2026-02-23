@@ -1,0 +1,6 @@
+{#
+  Table Body component style shadcn
+#}
+<tbody class="[&_tr:last-child]:border-0">
+  {% block content %}{{ content|default('')|raw }}{% endblock %}
+</tbody>

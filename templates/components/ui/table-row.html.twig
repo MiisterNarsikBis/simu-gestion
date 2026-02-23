@@ -1,0 +1,6 @@
+{#
+  Table Row component style shadcn
+#}
+<tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+  {% block content %}{{ content|default('')|raw }}{% endblock %}
+</tr>

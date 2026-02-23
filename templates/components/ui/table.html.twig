@@ -1,0 +1,9 @@
+{#
+  Table component style shadcn
+  Usage: {% include 'components/ui/table.html.twig' with { class: '' } %}
+#}
+<div class="relative w-full overflow-auto">
+  <table class="w-full caption-bottom text-sm {{ class|default('') }}">
+    {% block content %}{{ content|default('')|raw }}{% endblock %}
+  </table>
+</div>

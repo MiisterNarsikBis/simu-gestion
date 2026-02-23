@@ -1,0 +1,6 @@
+{#
+  Table Cell component style shadcn
+#}
+<td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
+  {% block content %}{{ content|default('')|raw }}{% endblock %}
+</td>

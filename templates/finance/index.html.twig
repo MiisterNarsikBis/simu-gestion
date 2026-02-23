@@ -1,0 +1,187 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Finance - Game Test{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight">Gestion financière</h1>
+            <p class="text-muted-foreground mt-2">Capital social et crédits</p>
+        </div>
+        <a href="{{ path('app_dashboard') }}" class="text-sm text-muted-foreground hover:text-primary">
+            ← Retour au dashboard
+        </a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="mb-4 p-4 rounded-md bg-green-100 text-green-800 border border-green-200">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    {% for message in app.flashes('error') %}
+        <div class="mb-4 p-4 rounded-md bg-red-100 text-red-800 border border-red-200">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    <div class="grid gap-6 md:grid-cols-2">
+        {# Capital social #}
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h2 class="text-2xl font-semibold leading-none tracking-tight">Capital social</h2>
+            </div>
+            <div class="p-6 pt-0 space-y-4">
+                {% if financeState %}
+                    <div>
+                        <p class="text-sm text-muted-foreground">Capital actuel</p>
+                        <p class="text-2xl font-bold">{{ financeState.shareCapital|number_format(2, ',', ' ') }} €</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-muted-foreground">Trésorerie disponible</p>
+                        <p class="text-xl font-semibold">{{ financeState.cashAvailable|number_format(2, ',', ' ') }} €</p>
+                    </div>
+                    <form method="POST" action="{{ path('app_finance_capital_increase') }}" class="space-y-4">
+                        <div>
+                            <label for="amount" class="block text-sm font-medium mb-2">Montant à ajouter</label>
+                            <input
+                                type="number"
+                                id="amount"
+                                name="amount"
+                                step="0.01"
+                                min="0.01"
+                                max="{{ financeState.cashAvailable }}"
+                                required
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                        >
+                            Augmenter le capital
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Crédits #}
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h2 class="text-2xl font-semibold leading-none tracking-tight">Crédits</h2>
+            </div>
+            <div class="p-6 pt-0 space-y-4">
+                <div>
+                    <p class="text-sm text-muted-foreground">Plafond de crédit</p>
+                    <p class="text-xl font-semibold">{{ creditLimit.maxLoan|number_format(2, ',', ' ') }} €</p>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        (10 × capital social)
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-muted-foreground">Crédit utilisé</p>
+                    <p class="text-lg font-semibold">{{ creditLimit.usedLoan|number_format(2, ',', ' ') }} €</p>
+                </div>
+                <div>
+                    <p class="text-sm text-muted-foreground">Crédit disponible</p>
+                    <p class="text-lg font-semibold text-green-600">{{ creditLimit.availableLoan|number_format(2, ',', ' ') }} €</p>
+                </div>
+                <form method="POST" action="{{ path('app_finance_loan_create') }}" class="space-y-4">
+                    <div>
+                        <label for="principal" class="block text-sm font-medium mb-2">Montant du crédit</label>
+                        <input
+                            type="number"
+                            id="principal"
+                            name="principal"
+                            step="0.01"
+                            min="0.01"
+                            max="{{ creditLimit.availableLoan }}"
+                            required
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="0.00"
+                        />
+                    </div>
+                    <div>
+                        <label for="duration_months" class="block text-sm font-medium mb-2">Durée (mois)</label>
+                        <input
+                            type="number"
+                            id="duration_months"
+                            name="duration_months"
+                            min="1"
+                            max="120"
+                            value="12"
+                            required
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        {% if creditLimit.availableLoan <= 0 %}disabled{% endif %}
+                        class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                    >
+                        Créer un crédit
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Liste des crédits actifs #}
+    {% if loans is not empty %}
+        <div class="mt-8 rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h2 class="text-2xl font-semibold leading-none tracking-tight">Crédits actifs</h2>
+            </div>
+            <div class="p-6 pt-0">
+                <div class="space-y-4">
+                    {% for loan in loans %}
+                        <div class="rounded-lg border p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="font-semibold">Crédit #{{ loan.id }}</p>
+                                    <p class="text-sm text-muted-foreground">
+                                        Créé le jour {{ loan.startSimDay }}
+                                    </p>
+                                </div>
+                                <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-200">
+                                    Actif
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <p class="text-xs text-muted-foreground">Montant initial</p>
+                                    <p class="font-semibold">{{ loan.principal|number_format(2, ',', ' ') }} €</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-muted-foreground">Principal restant</p>
+                                    <p class="font-semibold">{{ loan.remainingPrincipal|number_format(2, ',', ' ') }} €</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-muted-foreground">Mensualité</p>
+                                    <p class="font-semibold">{{ loan.monthlyPayment|number_format(2, ',', ' ') }} €</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-muted-foreground">Durée</p>
+                                    <p class="font-semibold">{{ loan.durationMonths }} mois</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-xs text-muted-foreground mb-1">Progression</p>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    {% set principal = loan.principal + 0 %}
+                                    {% set remaining = loan.remainingPrincipal + 0 %}
+                                    {% set progress = principal > 0 ? ((principal - remaining) / principal * 100)|round : 0 %}
+                                    <div class="bg-primary h-2 rounded-full" style="width: {{ progress }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

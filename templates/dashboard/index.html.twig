@@ -1,0 +1,278 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - Game Test{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p class="text-muted-foreground mt-2">Gérez votre entreprise</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="{{ path('app_employees') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                Gérer les employés
+            </a>
+            <a href="{{ path('app_projects') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                Voir les projets
+            </a>
+        </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        {# Widget Jours disponibles #}
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight">Jours disponibles</h3>
+            </div>
+            <div class="p-6 pt-0">
+                <div id="days-widget" class="space-y-4">
+                    {% if gameState %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted-foreground">Jours disponibles</span>
+                            <span class="text-2xl font-bold" id="days-available">{{ gameState.daysAvailable }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted-foreground">Jours additionnels</span>
+                            <span class="text-2xl font-bold" id="additional-days">{{ gameState.additionalDays }}</span>
+                        </div>
+                        <div class="flex items-center justify-between border-t pt-4">
+                            <span class="text-sm text-muted-foreground">Jour simulé</span>
+                            <span class="text-lg font-semibold" id="sim-day">{{ gameState.simDay }}</span>
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-muted-foreground">Aucun état de jeu trouvé. Créez une entreprise pour commencer.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Widget Trésorerie #}
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight">Trésorerie</h3>
+            </div>
+            <div class="p-6 pt-0">
+                <div id="finance-widget" class="space-y-4">
+                    {% if financeState %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted-foreground">Trésorerie disponible</span>
+                            <span class="text-2xl font-bold" id="cash-available">{{ financeState.cashAvailable|number_format(2, ',', ' ') }} €</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted-foreground">Capital social</span>
+                            <span class="text-lg font-semibold" id="share-capital">{{ financeState.shareCapital|number_format(2, ',', ' ') }} €</span>
+                        </div>
+                        <div class="flex items-center justify-between border-t pt-4">
+                            <span class="text-sm text-muted-foreground">Loyer mensuel</span>
+                            <span class="text-sm" id="monthly-rent">{{ financeState.monthlyRent|number_format(2, ',', ' ') }} €</span>
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-muted-foreground">Aucun état financier trouvé.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Bouton Passer 1 jour #}
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight">Actions</h3>
+            </div>
+            <div class="p-6 pt-0">
+                <button 
+                    id="tick-button"
+                    type="button"
+                    class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                    {% if not gameState %}disabled{% endif %}
+                >
+                    Passer 1 jour
+                </button>
+                <div id="tick-message" class="mt-4 text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    {# Stats générales #}
+    {% if gameState %}
+    <div class="grid gap-4 md:grid-cols-2 mb-6">
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight">Statistiques</h3>
+            </div>
+            <div class="p-6 pt-0">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Qualité globale</span>
+                        <span class="text-lg font-semibold" id="quality-rating">{{ gameState.globalQualityRating }}/100</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Satisfaction globale</span>
+                        <span class="text-lg font-semibold" id="satisfaction">{{ gameState.globalSatisfaction }}/100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Projets en cours #}
+    {% if projects is not empty %}
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm mb-6">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-semibold leading-none tracking-tight">Projets en cours</h3>
+                    <a href="{{ path('app_projects') }}" class="text-sm text-muted-foreground hover:text-primary">
+                        Voir tous →
+                    </a>
+                </div>
+            </div>
+            <div class="p-6 pt-0">
+                <div class="space-y-4">
+                    {% for project in projects|slice(0, 3) %}
+                        <div class="rounded-lg border p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="font-semibold">{{ project.client.name }} - {{ project.type }}</p>
+                                    <p class="text-sm text-muted-foreground">
+                                        Budget : {{ project.budget|number_format(2, ',', ' ') }} €
+                                    </p>
+                                </div>
+                                <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-200">
+                                    {{ project.pipelineStage }}
+                                </span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-muted-foreground">Progression de l'étape</span>
+                                    <span class="font-semibold">{{ project.stageProgress }}%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: {{ project.stageProgress }}%"></div>
+                                </div>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Qualité</span>
+                                <span class="font-semibold">{{ project.quality }}/100</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% if projects|length > 3 %}
+                        <div class="text-center pt-2">
+                            <a href="{{ path('app_projects') }}" class="text-sm text-primary hover:underline">
+                                Voir {{ projects|length - 3 }} autre{{ projects|length - 3 > 1 ? 's' : '' }} projet{{ projects|length - 3 > 1 ? 's' : '' }}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Journal des opérations #}
+    <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div class="flex flex-col space-y-1.5 p-6">
+            <h3 class="text-2xl font-semibold leading-none tracking-tight">Journal des opérations</h3>
+        </div>
+        <div class="p-6 pt-0">
+            {% if ledgerEntries is not empty %}
+                <div class="relative w-full overflow-auto">
+                    <table class="w-full caption-bottom text-sm">
+                        <thead class="[&_tr]:border-b">
+                            <tr class="border-b transition-colors hover:bg-muted/50">
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Jour</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Catégorie</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Libellé</th>
+                                <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody class="[&_tr:last-child]:border-0">
+                            {% for entry in ledgerEntries %}
+                            <tr class="border-b transition-colors hover:bg-muted/50">
+                                <td class="p-4 align-middle">{{ entry.simDay }}</td>
+                                <td class="p-4 align-middle">
+                                    {% if entry.type == 'INCOME' %}
+                                        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 border-green-200">Revenu</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800 border-red-200">Dépense</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4 align-middle">{{ entry.category }}</td>
+                                <td class="p-4 align-middle">{{ entry.label ?? '-' }}</td>
+                                <td class="p-4 align-middle text-right">
+                                    {% if entry.type == 'INCOME' %}
+                                        <span class="text-green-600 font-semibold">+{{ entry.amount|number_format(2, ',', ' ') }} €</span>
+                                    {% else %}
+                                        <span class="text-red-600 font-semibold">-{{ entry.amount|number_format(2, ',', ' ') }} €</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-sm text-muted-foreground">Aucune opération enregistrée.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tickButton = document.getElementById('tick-button');
+    const tickMessage = document.getElementById('tick-message');
+    
+    if (tickButton) {
+        tickButton.addEventListener('click', function() {
+            tickButton.disabled = true;
+            tickMessage.textContent = 'Chargement...';
+            tickMessage.className = 'mt-4 text-sm text-muted-foreground';
+            
+            fetch('{{ path('app_game_tick') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'companyId=1'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour l'affichage
+                    const daysAvailableEl = document.getElementById('days-available');
+                    const additionalDaysEl = document.getElementById('additional-days');
+                    const simDayEl = document.getElementById('sim-day');
+                    const cashAvailableEl = document.getElementById('cash-available');
+                    
+                    if (daysAvailableEl) daysAvailableEl.textContent = data.daysAvailable;
+                    if (additionalDaysEl) additionalDaysEl.textContent = data.additionalDays;
+                    if (simDayEl) simDayEl.textContent = data.simDay;
+                    if (cashAvailableEl && data.cashAfter) {
+                        cashAvailableEl.textContent = parseFloat(data.cashAfter).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+                    }
+                    
+                    tickMessage.textContent = 'Jour passé avec succès ! Coûts : ' + (data.totalCosts || 0).toFixed(2) + ' €';
+                    tickMessage.className = 'mt-4 text-sm text-green-600';
+                    
+                    // Recharger la page après 1 seconde pour mettre à jour toutes les données
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    tickMessage.textContent = 'Erreur : ' + (data.error || 'Erreur inconnue');
+                    tickMessage.className = 'mt-4 text-sm text-destructive';
+                    tickButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                tickMessage.textContent = 'Erreur : ' + error.message;
+                tickMessage.className = 'mt-4 text-sm text-destructive';
+                tickButton.disabled = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

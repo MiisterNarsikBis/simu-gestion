@@ -1,0 +1,6 @@
+{#
+  Card Content component style shadcn
+#}
+<div class="p-6 pt-0">
+  {% block content %}{{ content|default('')|raw }}{% endblock %}
+</div>

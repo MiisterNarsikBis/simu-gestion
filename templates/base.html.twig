@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Game Test{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app') }}
+        {% endblock %}
+
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+        {% endblock %}
+    </head>
+    <body class="min-h-screen bg-background font-sans antialiased">
+        <div class="flex min-h-screen flex-col">
+            {% block header %}
+                <header class="border-b">
+                    <div class="container flex h-16 items-center px-4">
+                        <nav class="flex items-center space-x-6">
+                            <a href="{{ path('app_dashboard') }}" class="text-lg font-bold">
+                                Game Test
+                            </a>
+                            <div class="flex items-center space-x-4">
+                                <a href="{{ path('app_dashboard') }}" class="text-sm font-medium transition-colors hover:text-primary">
+                                    Dashboard
+                                </a>
+                                <a href="{{ path('app_employees') }}" class="text-sm font-medium transition-colors hover:text-primary">
+                                    Employés
+                                </a>
+                                <a href="{{ path('app_projects') }}" class="text-sm font-medium transition-colors hover:text-primary">
+                                    Projets
+                                </a>
+                                <a href="{{ path('app_finance') }}" class="text-sm font-medium transition-colors hover:text-primary">
+                                    Finance
+                                </a>
+                            </div>
+                        </nav>
+                    </div>
+                </header>
+            {% endblock %}
+
+            <main class="flex-1">
+                {% block body %}{% endblock %}
+            </main>
+
+            {% block footer %}
+                <footer class="border-t py-6">
+                    <div class="container px-4 text-center text-sm text-muted-foreground">
+                        <p>&copy; {{ 'now'|date('Y') }} Game Test. Tous droits réservés.</p>
+                    </div>
+                </footer>
+            {% endblock %}
+        </div>
+    </body>
+</html>

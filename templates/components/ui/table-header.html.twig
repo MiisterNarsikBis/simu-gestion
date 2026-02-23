@@ -1,0 +1,6 @@
+{#
+  Table Header component style shadcn
+#}
+<thead class="[&_tr]:border-b">
+  {% block content %}{{ content|default('')|raw }}{% endblock %}
+</thead>

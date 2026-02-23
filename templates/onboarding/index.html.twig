@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer votre entreprise - Game Test{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold tracking-tight mb-2">Bienvenue !</h1>
+        <p class="text-muted-foreground">Créez votre entreprise pour commencer à jouer</p>
+    </div>
+
+    <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div class="flex flex-col space-y-1.5 p-6">
+            <h2 class="text-2xl font-semibold leading-none tracking-tight">Créer votre entreprise</h2>
+        </div>
+        <div class="p-6 pt-0">
+            {% for message in app.flashes('error') %}
+                <div class="mb-4 p-4 rounded-md bg-destructive/10 text-destructive border border-destructive/20">
+                    {{ message }}
+                </div>
+            {% endfor %}
+
+            {% for message in app.flashes('success') %}
+                <div class="mb-4 p-4 rounded-md bg-green-100 text-green-800 border border-green-200">
+                    {{ message }}
+                </div>
+            {% endfor %}
+
+            <form method="POST" action="{{ path('app_onboarding_create') }}" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium mb-2">
+                        Nom de l'entreprise <span class="text-destructive">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        required
+                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="Ex: Ma Super Agence"
+                        value=""
+                    />
+                </div>
+
+                <div class="rounded-lg border bg-muted/50 p-4">
+                    <h3 class="font-semibold mb-3">Configuration initiale</h3>
+                    <ul class="space-y-2 text-sm text-muted-foreground">
+                        <li>💰 Trésorerie de départ : <strong class="text-foreground">10 000 €</strong></li>
+                        <li>📊 Capital social : <strong class="text-foreground">10 000 €</strong></li>
+                        <li>🏢 Loyer mensuel : <strong class="text-foreground">500 €</strong></li>
+                        <li>⚡ Coût électricité journalier : <strong class="text-foreground">10 €</strong></li>
+                        <li>📅 Jours disponibles : <strong class="text-foreground">30 jours</strong></li>
+                    </ul>
+                </div>
+
+                <div class="flex gap-4">
+                    <button
+                        type="submit"
+                        class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                    >
+                        Créer mon entreprise
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
