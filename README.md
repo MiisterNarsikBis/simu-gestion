@@ -1,117 +1,105 @@
-# Game Test - Jeu de gestion d'entreprise
+# simu-gestion
 
 Jeu de simulation de gestion d'entreprise développé avec Symfony, Twig et Tailwind CSS.
 
-## Stack technique
+## 🎮 Description
 
-- **Backend** : Symfony 7.0
-- **Frontend** : Twig + Tailwind CSS (style shadcn)
-- **Base de données** : Doctrine ORM
+Simulation de gestion d'entreprise où vous gérez une agence web : recrutement d'employés, gestion de projets clients, finances, formations, et plus encore.
+
+## 🛠️ Technologies
+
+- **Backend** : Symfony 7
+- **Frontend** : Twig + Tailwind CSS + Stimulus
+- **Base de données** : MySQL (via Doctrine ORM)
 - **Build** : Webpack Encore
 
-## Installation
+## 📋 Sprints
 
-### Prérequis
+### Sprint 0 - Setup ✅
+- Configuration Symfony
+- Configuration base de données
+- Configuration sécurité
+- Configuration Tailwind CSS
+- Composants UI de base
+- Layout de base
+- Dashboard vide
 
-- PHP 8.2+
-- Composer
-- Node.js et npm
-- Symfony CLI (optionnel)
+### Sprint 1 - GameState et système de jours ✅
+- Entités GameState
+- Service MidnightRechargeService
+- Endpoint `/game/tick`
+- Widget UI jours disponibles
+- Commandes Symfony pour recharge/reset
+- Onboarding (création d'entreprise)
 
-### Étapes
+### Sprint 2 - Finance de base ✅
+- FinanceState
+- LedgerEntry
+- Coûts journaliers (loyer, électricité, salaires)
+- UI finance
 
-1. Installer les dépendances PHP :
+### Sprint 3 - HR, formation et disponibilité ✅
+- Entités Employee et Training
+- Multiplicateur de compétence
+- Coûts salaires
+- UI employés
+- Fonctionnalités de formation
+- Progression des formations dans TickEngine
+
+### Sprint 4 - Clients, projets et pipeline ✅
+- Entités Client, Project, ProjectAssignment
+- Système de pipeline (8 étapes)
+- Service de progression de projets
+- Livraison et revenus
+- Génération aléatoire de clients/projets
+- UI projets avec pipeline et progression
+
+### Sprint 5 - Capital social + crédit ✅
+- Système de capital social
+- Action "augmenter capital"
+- Système de crédit avec plafond (10× capital)
+- Gestion des mensualités
+- UI finance complète
+
+### Sprint 6 - Terrain multi / leaderboard (préparation)
+- Préparation multi-joueurs
+- Système de leaderboard
+
+## 🚀 Installation
+
 ```bash
+# Installer les dépendances PHP
 composer install
-```
 
-2. Installer les dépendances Node.js :
-```bash
+# Installer les dépendances Node
 npm install
-```
 
-3. Configurer la base de données dans `.env` :
-```env
-DATABASE_URL="mysql://user:password@127.0.0.1:3306/gametest?serverVersion=8.0"
-```
-
-4. Créer la base de données :
-```bash
+# Configurer la base de données dans .env
+# Puis créer la base et exécuter les migrations
 php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate
-```
 
-5. Compiler les assets :
-```bash
+# Compiler les assets
+npm run build
+# ou en mode dev
 npm run dev
-# ou en mode watch
-npm run watch
 ```
 
-6. Lancer le serveur de développement :
+## 📝 Commandes utiles
+
 ```bash
-symfony server:start
-# ou
-php -S localhost:8000 -t public
+# Recharger les jours disponibles (à exécuter quotidiennement)
+php bin/console app:game:recharge-days
+
+# Reset des jours non utilisés le dimanche
+php bin/console app:game:reset-sunday
 ```
 
-## Structure du projet
+## 📚 Documentation
 
-- `src/` : Code source PHP (Controllers, Entities, Services)
-- `templates/` : Templates Twig
-  - `components/ui/` : Composants UI style shadcn
-- `assets/` : Assets frontend (CSS, JS)
-- `config/` : Configuration Symfony
-- `public/` : Point d'entrée web
-
-## Documentation
-
-Voir les fichiers de documentation :
-- `PRD.md` : Product Requirements Document
+- `PRD.md` : Règles du jeu et mécaniques principales
 - `ARCHITECTURE.md` : Architecture technique
 - `DATA_MODEL.md` : Modèle de données
 - `SIMULATION_ENGINE.md` : Moteur de simulation
-- `IMPLEMENTATION_PLAN.md` : Plan d'implémentation
-
-## Développement
-
-### Compiler les assets
-
-```bash
-# Mode développement
-npm run dev
-
-# Mode watch (recompilation automatique)
-npm run watch
-
-# Mode production
-npm run build
-```
-
-### Commandes Symfony utiles
-
-```bash
-# Créer une entité
-php bin/console make:entity
-
-# Créer une migration
-php bin/console make:migration
-
-# Appliquer les migrations
-php bin/console doctrine:migrations:migrate
-
-# Créer un contrôleur
-php bin/console make:controller
-```
-
-## Sprint 0 - Terminé ✅
-
-- [x] Init Symfony + DB + Security
-- [x] Configuration Tailwind CSS avec tokens shadcn
-- [x] Composants UI style shadcn (Button, Card, Badge, Table)
-- [x] Base layout Twig avec navigation
-- [x] Dashboard vide
-
-## Prochaines étapes
-
-Voir `IMPLEMENTATION_PLAN.md` pour le plan complet des sprints suivants.
+- `IMPLEMENTATION_PLAN.md` : Plan d'implémentation détaillé
+- `CRON.md` : Configuration des tâches cron
