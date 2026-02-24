@@ -3,9 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Employee;
-use App\Repository\CompanyRepository;
 use App\Repository\EmployeeRepository;
 use App\Repository\TrainingRepository;
+use App\Service\CompanyProvider;
 use App\Service\EmployeeNameGenerator;
 use App\Service\TrainingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,10 +20,9 @@ class EmployeeController extends AbstractController
     public function index(
         EmployeeRepository $employeeRepository,
         TrainingRepository $trainingRepository,
-        CompanyRepository $companyRepository
+        CompanyProvider $companyProvider
     ): Response {
-        // Pour l'instant, on récupère la première entreprise
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }
@@ -40,11 +39,11 @@ class EmployeeController extends AbstractController
     #[Route('/employees/create', name: 'app_employees_create', methods: ['POST'])]
     public function create(
         Request $request,
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         EntityManagerInterface $entityManager,
         EmployeeNameGenerator $nameGenerator
     ): Response {
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }

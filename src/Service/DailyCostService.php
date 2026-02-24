@@ -42,73 +42,73 @@ class DailyCostService
         }
 
         $costs = [];
-        $totalCosts = 0.0;
+        $totalCosts = '0.00';
 
         // 1. Loyer (mensuel / 30)
-        $dailyRent = (float)$financeState->getDailyRent();
-        if ($dailyRent > 0) {
+        $dailyRent = $financeState->getDailyRent();
+        if (bccomp($dailyRent, '0', 2) > 0) {
             $this->createLedgerEntry(
                 $company,
                 $simDay,
                 LedgerEntry::TYPE_EXPENSE,
                 LedgerEntry::CATEGORY_RENT,
-                (string)$dailyRent,
+                $dailyRent,
                 'Loyer journalier'
             );
             $costs['rent'] = $dailyRent;
-            $totalCosts += $dailyRent;
+            $totalCosts = bcadd($totalCosts, $dailyRent, 2);
         }
 
         // 2. Électricité
-        $electricityCost = (float)$financeState->getDailyElectricityCost();
-        if ($electricityCost > 0) {
+        $electricityCost = $financeState->getDailyElectricityCost();
+        if (bccomp($electricityCost, '0', 2) > 0) {
             $this->createLedgerEntry(
                 $company,
                 $simDay,
                 LedgerEntry::TYPE_EXPENSE,
                 LedgerEntry::CATEGORY_ELECTRICITY,
-                (string)$electricityCost,
+                $electricityCost,
                 'Coût électricité journalier'
             );
             $costs['electricity'] = $electricityCost;
-            $totalCosts += $electricityCost;
+            $totalCosts = bcadd($totalCosts, $electricityCost, 2);
         }
 
         // 3. Salaires (somme des salaires journaliers de tous les employés actifs)
         $employees = $this->employeeRepository->findActiveByCompany($company->getId());
-        $totalSalaries = 0.0;
-        
+        $totalSalaries = '0.00';
+
         foreach ($employees as $employee) {
             // Ne pas compter les employés en formation (ils ne travaillent pas)
             if ($employee->isInTraining()) {
                 continue;
             }
-            $totalSalaries += (float)$employee->getSalaryDaily();
+            $totalSalaries = bcadd($totalSalaries, $employee->getSalaryDaily(), 2);
         }
-        
-        if ($totalSalaries > 0) {
+
+        if (bccomp($totalSalaries, '0', 2) > 0) {
             $this->createLedgerEntry(
                 $company,
                 $simDay,
                 LedgerEntry::TYPE_EXPENSE,
                 LedgerEntry::CATEGORY_SALARY,
-                (string)$totalSalaries,
+                $totalSalaries,
                 'Salaires journaliers (' . count($employees) . ' employé(s))'
             );
             $costs['salaries'] = $totalSalaries;
-            $totalCosts += $totalSalaries;
+            $totalCosts = bcadd($totalCosts, $totalSalaries, 2);
         } else {
-            $costs['salaries'] = 0.0;
+            $costs['salaries'] = '0.00';
         }
 
         // 4. Taxes (simplifié : taxe fixe journalière basée sur le taux)
         // Pour l'instant, on utilise une taxe fixe de 0
         // Plus tard, on pourra calculer sur les revenus encaissés
-        $costs['taxes'] = 0.0;
+        $costs['taxes'] = '0.00';
 
         // Débiter la trésorerie
-        if ($totalCosts > 0) {
-            $financeState->subtractCash((string)$totalCosts);
+        if (bccomp($totalCosts, '0', 2) > 0) {
+            $financeState->subtractCash($totalCosts);
             $this->entityManager->flush();
         }
 

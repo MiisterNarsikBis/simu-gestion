@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Repository\CompanyRepository;
+use App\Service\CompanyProvider;
 use App\Service\OnboardingService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,10 +12,10 @@ use Symfony\Component\Routing\Attribute\Route;
 class OnboardingController extends AbstractController
 {
     #[Route('/onboarding', name: 'app_onboarding')]
-    public function index(CompanyRepository $companyRepository): Response
+    public function index(CompanyProvider $companyProvider): Response
     {
-        // Si une entreprise existe déjà, rediriger vers le dashboard
-        $existingCompany = $companyRepository->findOneBy([]);
+        // Si une entreprise existe déjà en session, rediriger vers le dashboard
+        $existingCompany = $companyProvider->getCompany();
         if ($existingCompany) {
             return $this->redirectToRoute('app_dashboard');
         }
@@ -24,10 +24,9 @@ class OnboardingController extends AbstractController
     }
 
     #[Route('/onboarding/create', name: 'app_onboarding_create', methods: ['POST'])]
-    public function create(Request $request, OnboardingService $onboardingService): Response
+    public function create(Request $request, OnboardingService $onboardingService, CompanyProvider $companyProvider): Response
     {
         $name = $request->request->get('name', '');
-        $ownerUserId = $request->request->getInt('ownerUserId', 1); // Pour l'instant, on utilise 1 par défaut
 
         if (empty($name)) {
             $this->addFlash('error', 'Le nom de l\'entreprise est requis.');
@@ -35,7 +34,8 @@ class OnboardingController extends AbstractController
         }
 
         try {
-            $company = $onboardingService->createCompany($name, $ownerUserId);
+            $company = $onboardingService->createCompany($name, 1);
+            $companyProvider->setCompany($company);
             $this->addFlash('success', 'Entreprise créée avec succès !');
             return $this->redirectToRoute('app_dashboard');
         } catch (\Exception $e) {

@@ -2,11 +2,11 @@
 
 namespace App\Controller;
 
-use App\Repository\CompanyRepository;
 use App\Repository\FinanceStateRepository;
 use App\Repository\GameStateRepository;
 use App\Repository\LoanRepository;
 use App\Service\CapitalService;
+use App\Service\CompanyProvider;
 use App\Service\LoanService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,13 +17,13 @@ class FinanceController extends AbstractController
 {
     #[Route('/finance', name: 'app_finance')]
     public function index(
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         FinanceStateRepository $financeStateRepository,
         LoanRepository $loanRepository,
         LoanService $loanService,
         GameStateRepository $gameStateRepository
     ): Response {
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }
@@ -45,11 +45,11 @@ class FinanceController extends AbstractController
     #[Route('/finance/capital/increase', name: 'app_finance_capital_increase', methods: ['POST'])]
     public function increaseCapital(
         Request $request,
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         GameStateRepository $gameStateRepository,
         CapitalService $capitalService
     ): Response {
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }
@@ -75,11 +75,11 @@ class FinanceController extends AbstractController
     #[Route('/finance/loan/create', name: 'app_finance_loan_create', methods: ['POST'])]
     public function createLoan(
         Request $request,
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         GameStateRepository $gameStateRepository,
         LoanService $loanService
     ): Response {
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }

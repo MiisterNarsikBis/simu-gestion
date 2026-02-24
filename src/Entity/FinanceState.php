@@ -63,13 +63,13 @@ class FinanceState
 
     public function addCash(string $amount): static
     {
-        $this->cashAvailable = (string)((float)$this->cashAvailable + (float)$amount);
+        $this->cashAvailable = bcadd($this->cashAvailable, $amount, 2);
         return $this;
     }
 
     public function subtractCash(string $amount): static
     {
-        $this->cashAvailable = (string)((float)$this->cashAvailable - (float)$amount);
+        $this->cashAvailable = bcsub($this->cashAvailable, $amount, 2);
         return $this;
     }
 
@@ -98,7 +98,7 @@ class FinanceState
     public function getDailyRent(): string
     {
         // Loyer mensuel divisé par 30
-        return (string)((float)$this->monthlyRent / 30);
+        return bcdiv($this->monthlyRent, '30', 2);
     }
 
     public function getDailyElectricityCost(): string

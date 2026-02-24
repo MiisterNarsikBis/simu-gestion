@@ -31,35 +31,35 @@ class LoanService
         }
 
         // Vérifier le plafond
-        $maxLoan = (float)$financeState->getShareCapital() * 10;
-        $principalFloat = (float)$principal;
+        $maxLoan = bcmul($financeState->getShareCapital(), '10', 2);
 
-        if ($principalFloat > $maxLoan) {
+        if (bccomp($principal, $maxLoan, 2) > 0) {
             throw new \RuntimeException(sprintf(
                 'Le montant demandé (%s €) dépasse le plafond autorisé (%s € = 10 × capital social)',
-                number_format($principalFloat, 2, ',', ' '),
-                number_format($maxLoan, 2, ',', ' ')
+                number_format((float)$principal, 2, ',', ' '),
+                number_format((float)$maxLoan, 2, ',', ' ')
             ));
         }
 
         // Vérifier les crédits existants
         $existingLoans = $this->loanRepository->findActiveByCompany($company->getId());
-        $totalExistingPrincipal = 0.0;
+        $totalExistingPrincipal = '0.00';
         foreach ($existingLoans as $loan) {
-            $totalExistingPrincipal += (float)$loan->getRemainingPrincipal();
+            $totalExistingPrincipal = bcadd($totalExistingPrincipal, $loan->getRemainingPrincipal(), 2);
         }
 
-        if ($totalExistingPrincipal + $principalFloat > $maxLoan) {
+        if (bccomp(bcadd($totalExistingPrincipal, $principal, 2), $maxLoan, 2) > 0) {
             throw new \RuntimeException(sprintf(
                 'Le montant demandé dépasse le plafond disponible. Crédits existants : %s €, plafond : %s €',
-                number_format($totalExistingPrincipal, 2, ',', ' '),
-                number_format($maxLoan, 2, ',', ' ')
+                number_format((float)$totalExistingPrincipal, 2, ',', ' '),
+                number_format((float)$maxLoan, 2, ',', ' ')
             ));
         }
 
-        // Calculer la mensualité (amortissement standard)
+        // Calculer la mensualité (amortissement standard — formule complexe, on reste en float)
         $annualRate = 0.04; // 4%
         $monthlyRate = $annualRate / 12;
+        $principalFloat = (float)$principal;
         $monthlyPayment = $principalFloat * ($monthlyRate * pow(1 + $monthlyRate, $durationMonths)) / (pow(1 + $monthlyRate, $durationMonths) - 1);
 
         // Créer le crédit
@@ -70,7 +70,7 @@ class LoanService
         $loan->setDurationMonths($durationMonths);
         $loan->setStartSimDay($simDay);
         $loan->setRemainingPrincipal($principal);
-        $loan->setMonthlyPayment((string)round($monthlyPayment, 2));
+        $loan->setMonthlyPayment(number_format($monthlyPayment, 2, '.', ''));
         $loan->setStatus(Loan::STATUS_ACTIVE);
         $loan->setLastPaymentSimDay(null);
 
@@ -120,27 +120,27 @@ class LoanService
                 continue;
             }
 
-            $monthlyPayment = (float)$loan->getMonthlyPayment();
-            $remainingPrincipal = (float)$loan->getRemainingPrincipal();
-            $annualRate = (float)$loan->getAnnualRate();
+            $monthlyPayment = $loan->getMonthlyPayment();
+            $remainingPrincipal = $loan->getRemainingPrincipal();
 
             // Calculer les intérêts (intérêts = remaining_principal * annual_rate / 12)
-            $interest = $remainingPrincipal * $annualRate / 12;
-            $principalPayment = $monthlyPayment - $interest;
+            $interest = bcdiv(bcmul($remainingPrincipal, $loan->getAnnualRate(), 10), '12', 2);
+            $principalPayment = bcsub($monthlyPayment, $interest, 2);
 
             // Vérifier si on a assez de trésorerie
-            $cashAvailable = (float)$financeState->getCashAvailable();
-            if ($cashAvailable < $monthlyPayment) {
-                // Pas assez de trésorerie, on pourrait gérer ça différemment
-                // Pour l'instant, on continue quand même
+            if (bccomp($financeState->getCashAvailable(), $monthlyPayment, 2) < 0) {
+                // Pas assez de trésorerie, on continue quand même
             }
 
             // Débiter la trésorerie
-            $financeState->subtractCash((string)$monthlyPayment);
+            $financeState->subtractCash($monthlyPayment);
 
             // Mettre à jour le principal restant
-            $newRemainingPrincipal = max(0, $remainingPrincipal - $principalPayment);
-            $loan->setRemainingPrincipal((string)round($newRemainingPrincipal, 2));
+            $newRemainingPrincipal = bcsub($remainingPrincipal, $principalPayment, 2);
+            if (bccomp($newRemainingPrincipal, '0', 2) < 0) {
+                $newRemainingPrincipal = '0.00';
+            }
+            $loan->setRemainingPrincipal($newRemainingPrincipal);
             $loan->setLastPaymentSimDay($simDay);
 
             // Créer les entrées de journal
@@ -149,7 +149,7 @@ class LoanService
                 $simDay,
                 LedgerEntry::TYPE_EXPENSE,
                 LedgerEntry::CATEGORY_LOAN_PAYMENT,
-                (string)round($interest, 2),
+                $interest,
                 'Intérêts crédit #' . $loan->getId()
             );
 
@@ -158,12 +158,12 @@ class LoanService
                 $simDay,
                 LedgerEntry::TYPE_EXPENSE,
                 LedgerEntry::CATEGORY_LOAN_PAYMENT,
-                (string)round($principalPayment, 2),
+                $principalPayment,
                 'Remboursement principal crédit #' . $loan->getId()
             );
 
             // Vérifier si le crédit est remboursé
-            if ($newRemainingPrincipal <= 0.01) {
+            if (bccomp($newRemainingPrincipal, '0.01', 2) <= 0) {
                 $loan->setStatus(Loan::STATUS_PAID);
                 $loan->setRemainingPrincipal('0.00');
             }
@@ -189,20 +189,23 @@ class LoanService
             ];
         }
 
-        $maxLoan = (float)$financeState->getShareCapital() * 10;
+        $maxLoan = bcmul($financeState->getShareCapital(), '10', 2);
         $existingLoans = $this->loanRepository->findActiveByCompany($company->getId());
-        
-        $usedLoan = 0.0;
+
+        $usedLoan = '0.00';
         foreach ($existingLoans as $loan) {
-            $usedLoan += (float)$loan->getRemainingPrincipal();
+            $usedLoan = bcadd($usedLoan, $loan->getRemainingPrincipal(), 2);
         }
 
-        $availableLoan = max(0, $maxLoan - $usedLoan);
+        $availableLoan = bcsub($maxLoan, $usedLoan, 2);
+        if (bccomp($availableLoan, '0', 2) < 0) {
+            $availableLoan = '0.00';
+        }
 
         return [
-            'maxLoan' => (string)round($maxLoan, 2),
-            'usedLoan' => (string)round($usedLoan, 2),
-            'availableLoan' => (string)round($availableLoan, 2),
+            'maxLoan' => $maxLoan,
+            'usedLoan' => $usedLoan,
+            'availableLoan' => $availableLoan,
         ];
     }
 

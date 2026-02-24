@@ -2,13 +2,11 @@
 
 namespace App\Controller;
 
-use App\Entity\FinanceState;
-use App\Entity\GameState;
-use App\Repository\CompanyRepository;
 use App\Repository\FinanceStateRepository;
 use App\Repository\GameStateRepository;
 use App\Repository\LedgerEntryRepository;
 use App\Repository\ProjectRepository;
+use App\Service\CompanyProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,17 +18,15 @@ class DashboardController extends AbstractController
         GameStateRepository $gameStateRepository,
         FinanceStateRepository $financeStateRepository,
         LedgerEntryRepository $ledgerEntryRepository,
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         ProjectRepository $projectRepository
     ): Response {
-        // Vérifier si une entreprise existe
-        $company = $companyRepository->findOneBy([]);
+        // Vérifier si une entreprise existe en session
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }
 
-        // Pour l'instant, on récupère le premier GameState
-        // Plus tard, on récupérera celui de l'utilisateur connecté
         $gameState = $gameStateRepository->findOneBy(['company' => $company]);
         $financeState = $financeStateRepository->findOneBy(['company' => $company]);
         
@@ -48,6 +44,7 @@ class DashboardController extends AbstractController
 
         return $this->render('dashboard/index.html.twig', [
             'title' => 'Dashboard',
+            'company' => $company,
             'gameState' => $gameState,
             'financeState' => $financeState,
             'ledgerEntries' => $ledgerEntries,

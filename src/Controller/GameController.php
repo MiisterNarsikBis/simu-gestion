@@ -2,8 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\GameState;
 use App\Repository\GameStateRepository;
+use App\Service\CompanyProvider;
 use App\Service\TickEngine;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,14 +14,19 @@ use Symfony\Component\Routing\Attribute\Route;
 class GameController extends AbstractController
 {
     #[Route('/game/tick', name: 'app_game_tick', methods: ['POST'])]
-    public function tick(Request $request, TickEngine $tickEngine): JsonResponse
+    public function tick(Request $request, TickEngine $tickEngine, CompanyProvider $companyProvider): JsonResponse
     {
-        try {
-            // Pour l'instant, on utilise l'ID 1 par défaut
-            // Plus tard, on récupérera l'entreprise de l'utilisateur connecté
-            $companyId = $request->request->getInt('companyId', 1);
+        if (!$this->isCsrfTokenValid('game_tick', $request->request->get('_token'))) {
+            return new JsonResponse(['success' => false, 'error' => 'Token CSRF invalide'], Response::HTTP_FORBIDDEN);
+        }
 
-            $result = $tickEngine->tick($companyId);
+        try {
+            $company = $companyProvider->getCompany();
+            if (!$company) {
+                return new JsonResponse(['success' => false, 'error' => 'Entreprise introuvable'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $result = $tickEngine->tick($company->getId());
 
             if (!$result['success']) {
                 return new JsonResponse($result, Response::HTTP_BAD_REQUEST);
@@ -38,11 +43,14 @@ class GameController extends AbstractController
     }
 
     #[Route('/game/state', name: 'app_game_state', methods: ['GET'])]
-    public function getState(GameStateRepository $gameStateRepository): JsonResponse
+    public function getState(GameStateRepository $gameStateRepository, CompanyProvider $companyProvider): JsonResponse
     {
-        // Pour l'instant, on récupère le premier GameState
-        // Plus tard, on récupérera celui de l'utilisateur connecté
-        $gameState = $gameStateRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
+        if (!$company) {
+            return new JsonResponse(['error' => 'Entreprise introuvable'], Response::HTTP_NOT_FOUND);
+        }
+
+        $gameState = $gameStateRepository->findOneBy(['company' => $company]);
 
         if (!$gameState) {
             return new JsonResponse([
