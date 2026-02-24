@@ -220,15 +220,15 @@ class ProjectProgressService
             $assignedEmployeeIds[] = $assignment->getEmployee()->getId();
         }
 
-        // Trouver tous les employés disponibles avec le bon rôle
-        // On cherche aussi ceux qui sont SUR_POSTE car ils peuvent être réassignés
+        // Trouver tous les employés disponibles (DISPO) avec le bon rôle
         $allEmployees = $this->employeeRepository->findByCompany($project->getCompany()->getId());
         $assignedCount = 0;
-        
+
         foreach ($allEmployees as $employee) {
-            // Vérifier que l'employé a le bon rôle, n'est pas en formation, et n'est pas déjà assigné
-            if ($employee->getRole() === $requiredRole 
-                && !$employee->isInTraining() 
+            // Vérifier que l'employé a le bon rôle, est disponible (ni en formation, ni sur un projet), et n'est pas déjà assigné
+            if ($employee->getRole() === $requiredRole
+                && !$employee->isInTraining()
+                && !$employee->isOnProject()
                 && !in_array($employee->getId(), $assignedEmployeeIds)) {
                 // Créer l'assignation
                 $assignment = new ProjectAssignment();
@@ -236,6 +236,8 @@ class ProjectProgressService
                 $assignment->setEmployee($employee);
                 $assignment->setStage($project->getPipelineStage());
                 $assignment->setAllocation(100);
+
+                $employee->setAvailabilityStatus(Employee::STATUS_SUR_POSTE);
 
                 $this->entityManager->persist($assignment);
                 $assignedEmployeeIds[] = $employee->getId();

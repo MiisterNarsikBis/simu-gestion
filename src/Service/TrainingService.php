@@ -27,9 +27,9 @@ class TrainingService
      */
     public function startTraining(Employee $employee, int $targetStars, int $daysTotal, string $cost): Training
     {
-        // Vérifier que l'employé n'est pas déjà en formation
-        if ($employee->isInTraining()) {
-            throw new \RuntimeException('L\'employé est déjà en formation');
+        // Vérifier que l'employé est disponible (ni en formation, ni sur un projet)
+        if (!$employee->isAvailable()) {
+            throw new \RuntimeException('L\'employé n\'est pas disponible (en formation ou déjà sur un projet)');
         }
 
         // Vérifier que l'entreprise a assez de trésorerie
@@ -38,8 +38,7 @@ class TrainingService
             throw new \RuntimeException('FinanceState introuvable');
         }
 
-        $costFloat = (float)$cost;
-        if ((float)$financeState->getCashAvailable() < $costFloat) {
+        if (bccomp($financeState->getCashAvailable(), $cost, 2) < 0) {
             throw new \RuntimeException('Trésorerie insuffisante pour cette formation');
         }
 
@@ -132,10 +131,9 @@ class TrainingService
         // Augmenter le salaire selon les étoiles gagnées
         // Chaque étoile supplémentaire augmente le salaire de 15%
         if ($starsGained > 0) {
-            $currentSalary = (float)$employee->getSalaryDaily();
-            $salaryIncrease = $currentSalary * 0.15 * $starsGained;
-            $newSalary = $currentSalary + $salaryIncrease;
-            $employee->setSalaryDaily((string)round($newSalary, 2));
+            $salaryIncrease = bcmul(bcmul($employee->getSalaryDaily(), '0.15', 10), (string)$starsGained, 2);
+            $newSalary = bcadd($employee->getSalaryDaily(), $salaryIncrease, 2);
+            $employee->setSalaryDaily($newSalary);
         }
         
         // Remettre l'employé disponible

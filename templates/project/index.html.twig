@@ -29,6 +29,16 @@
             {{ message }}
         </div>
     {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="mb-4 p-4 rounded-md bg-red-100 text-red-800 border border-red-200">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('info') %}
+        <div class="mb-4 p-4 rounded-md bg-blue-100 text-blue-800 border border-blue-200">
+            {{ message }}
+        </div>
+    {% endfor %}
 
     {% if projects is not empty %}
         <div class="grid gap-6">
@@ -134,7 +144,7 @@
                                         <select name="employee_id" required class="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
                                             <option value="">Sélectionner un employé ({{ requiredRole }})</option>
                                             {% for employee in employees %}
-                                                {% if employee.role == requiredRole and not employee.isInTraining %}
+                                                {% if employee.role == requiredRole and not employee.isInTraining and not employee.isOnProject %}
                                                     {% set isAssigned = false %}
                                                     {% for assignment in currentAssignments %}
                                                         {% if assignment.employee.id == employee.id %}
@@ -149,6 +159,23 @@
                                         </select>
                                         <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                                             Assigner
+                                        </button>
+                                    </div>
+                                </form>
+
+                                {# Formulaire auto-assigner #}
+                                <form method="POST" action="{{ path('app_projects_auto_assign', {id: project.id}) }}" class="mt-2">
+                                    <div class="flex gap-2">
+                                        <select name="role" class="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                            <option value="DEV" {% if requiredRole == 'DEV' %}selected{% endif %}>DEV</option>
+                                            <option value="DESIGNER" {% if requiredRole == 'DESIGNER' %}selected{% endif %}>DESIGNER</option>
+                                            <option value="GRAPHISTE" {% if requiredRole == 'GRAPHISTE' %}selected{% endif %}>GRAPHISTE</option>
+                                            <option value="INTEGRATEUR" {% if requiredRole == 'INTEGRATEUR' %}selected{% endif %}>INTEGRATEUR</option>
+                                            <option value="RH" {% if requiredRole == 'RH' %}selected{% endif %}>RH</option>
+                                            <option value="MANAGER" {% if requiredRole == 'MANAGER' %}selected{% endif %}>MANAGER</option>
+                                        </select>
+                                        <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2">
+                                            Auto-assigner
                                         </button>
                                     </div>
                                 </form>

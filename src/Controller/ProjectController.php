@@ -2,11 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Employee;
 use App\Entity\ProjectAssignment;
-use App\Repository\CompanyRepository;
 use App\Repository\EmployeeRepository;
 use App\Repository\ProjectAssignmentRepository;
 use App\Repository\ProjectRepository;
+use App\Service\CompanyProvider;
 use App\Service\ProjectProgressService;
 use App\Service\ProjectSeedService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,12 +21,12 @@ class ProjectController extends AbstractController
     #[Route('/projects', name: 'app_projects')]
     public function index(
         ProjectRepository $projectRepository,
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         EmployeeRepository $employeeRepository,
         ProjectAssignmentRepository $projectAssignmentRepository,
         ProjectProgressService $projectProgressService
     ): Response {
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }
@@ -65,11 +66,11 @@ class ProjectController extends AbstractController
 
     #[Route('/projects/generate', name: 'app_projects_generate', methods: ['POST'])]
     public function generate(
-        CompanyRepository $companyRepository,
+        CompanyProvider $companyProvider,
         ProjectSeedService $projectSeedService,
         ProjectProgressService $projectProgressService
     ): Response {
-        $company = $companyRepository->findOneBy([]);
+        $company = $companyProvider->getCompany();
         if (!$company) {
             return $this->redirectToRoute('app_onboarding');
         }
@@ -113,6 +114,12 @@ class ProjectController extends AbstractController
             return $this->redirectToRoute('app_projects');
         }
 
+        // Vérifier que l'employé est disponible
+        if (!$employee->isAvailable()) {
+            $this->addFlash('error', 'Cet employé n\'est pas disponible (en formation ou déjà sur un projet)');
+            return $this->redirectToRoute('app_projects');
+        }
+
         // Vérifier si l'assignation existe déjà
         $existingAssignment = $projectAssignmentRepository->findOneBy([
             'project' => $project,
@@ -131,6 +138,8 @@ class ProjectController extends AbstractController
         $assignment->setEmployee($employee);
         $assignment->setStage($project->getPipelineStage());
         $assignment->setAllocation(100);
+
+        $employee->setAvailabilityStatus(Employee::STATUS_SUR_POSTE);
 
         $entityManager->persist($assignment);
         $entityManager->flush();
@@ -169,10 +178,87 @@ class ProjectController extends AbstractController
 
         if ($assignment) {
             $entityManager->remove($assignment);
+            $employee->setAvailabilityStatus(Employee::STATUS_DISPO);
             $entityManager->flush();
             $this->addFlash('success', sprintf('Employé %s retiré du projet', $employee->getName()));
         }
 
+        return $this->redirectToRoute('app_projects');
+    }
+
+    #[Route('/projects/{id}/auto-assign', name: 'app_projects_auto_assign', methods: ['POST'])]
+    public function autoAssign(
+        int $id,
+        Request $request,
+        ProjectRepository $projectRepository,
+        EmployeeRepository $employeeRepository,
+        ProjectAssignmentRepository $projectAssignmentRepository,
+        CompanyProvider $companyProvider,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $project = $projectRepository->find($id);
+        if (!$project) {
+            $this->addFlash('error', 'Projet introuvable');
+            return $this->redirectToRoute('app_projects');
+        }
+
+        $company = $companyProvider->getCompany();
+        if (!$company) {
+            return $this->redirectToRoute('app_onboarding');
+        }
+
+        $role = $request->request->getString('role');
+        $validRoles = [
+            Employee::ROLE_DEV,
+            Employee::ROLE_DESIGNER,
+            Employee::ROLE_GRAPHISTE,
+            Employee::ROLE_INTEGRATEUR,
+            Employee::ROLE_RH,
+            Employee::ROLE_MANAGER,
+        ];
+
+        if (!in_array($role, $validRoles, true)) {
+            $this->addFlash('error', 'Rôle invalide');
+            return $this->redirectToRoute('app_projects');
+        }
+
+        // Récupérer les IDs déjà assignés sur ce projet/stage
+        $existingAssignments = $projectAssignmentRepository->findByProjectAndStage(
+            $project->getId(),
+            $project->getPipelineStage()
+        );
+        $assignedEmployeeIds = array_map(
+            fn($a) => $a->getEmployee()->getId(),
+            $existingAssignments
+        );
+
+        // Trouver le premier employé disponible avec le bon rôle, non déjà assigné
+        $availableEmployees = $employeeRepository->findAvailableByCompany($company->getId());
+        $chosen = null;
+        foreach ($availableEmployees as $emp) {
+            if ($emp->getRole() === $role && !in_array($emp->getId(), $assignedEmployeeIds, true)) {
+                $chosen = $emp;
+                break;
+            }
+        }
+
+        if ($chosen === null) {
+            $this->addFlash('error', sprintf('Aucun employé disponible avec le rôle %s', $role));
+            return $this->redirectToRoute('app_projects');
+        }
+
+        $assignment = new ProjectAssignment();
+        $assignment->setProject($project);
+        $assignment->setEmployee($chosen);
+        $assignment->setStage($project->getPipelineStage());
+        $assignment->setAllocation(100);
+
+        $chosen->setAvailabilityStatus(Employee::STATUS_SUR_POSTE);
+
+        $entityManager->persist($assignment);
+        $entityManager->flush();
+
+        $this->addFlash('success', sprintf('Employé %s auto-assigné au projet !', $chosen->getName()));
         return $this->redirectToRoute('app_projects');
     }
 }
